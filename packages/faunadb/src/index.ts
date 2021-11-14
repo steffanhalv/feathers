@@ -10,7 +10,7 @@ const {
   Create, Get, Ref, Delete,
   Paginate, Lambda, Map, Documents,
   Let, Var, Select, Filter, And, Equals,
-  Indexes, Match
+  Indexes, Match, Index
   // Sum, Add, Update
 } = faunadb.query
 
@@ -117,16 +117,31 @@ export class Service<T = any, D = Partial<T>> extends AdapterService<T, D> imple
     let match: any
     if (filters.$sort) {
       const sortKey = Object.keys(filters.$sort)[0]
-      // @ts-ignore
       const reverse = filters.$sort[sortKey] === -1 ? true : undefined
       // Make sure the index keys match the query keys in the index values
-      const allKeysMatch = (i: any, type: string) => {
-        return !!i[type]?.find((v: any) => v.field.includes(sortKey))
+      const allValuesMatch = (i: any) => {
+        return !!i.values?.find((v: any) => {
+          return v.field.join('.') === `data.${sortKey}` && v.reverse === reverse
+        })
       }
-      const directionMatches = (v: any) => v.reverse === reverse
-      match = indexes.find((i: any) => allKeysMatch(i, 'values') && directionMatches(i))
+      const allTermsMatch = (i: any) => {
+        return !!i.terms?.find((v: any) => {
+          return v.field.join('.') === `data.${sortKey}`
+        })
+      }
+      match = indexes.find((i: any) => {
+        const valuesMatch = allValuesMatch(i)
+        const termsMatch = allTermsMatch(i)
+        return valuesMatch && termsMatch
+      })
     }
     return match
+  }
+
+  // @ts-ignore
+  getTermsFromIndex (query: any, index: any) {
+    const keys = index.terms.map((t: any) => t.field[1] ).filter((f: any) => f)
+    return keys.map((key: string) => query[key])
   }
 
   async _find (params: AdapterParams = {}) {
@@ -137,14 +152,35 @@ export class Service<T = any, D = Partial<T>> extends AdapterService<T, D> imple
     // @ts-ignore
     const requiresIndex = Object.keys(query).length || filters.$sort
     const bestIndex = params.query.$index || this.getBestIndexForQuery(query, filters)
+    const terms = bestIndex ? this.getTermsFromIndex(query, bestIndex) : []
 
     if (requiresIndex && !bestIndex) {
       throw new errors.BadRequest(`No matching index for query ${JSON.stringify(params.query)}. Please explicitly provide an '$index' in the query.`)
     }
+    let fQuery = Documents(collection)
 
-    const fQuery = bestIndex
-      ? Match(bestIndex.ref)
-      : Documents(collection)
+    const size = paginate.default || 100_000
+
+    if (bestIndex) {
+      // @ts-ignore
+      const refIndex = bestIndex.values.findIndex((v: any) => v.field[0] === 'ref')
+      const indexResponse = await this.Model.query(
+        // Map(
+          Paginate(
+            Match(Index(bestIndex.name), terms[0]),
+            { size }
+          ),
+          // Lambda('index_result', Get(Select(Var('index_result'), refIndex)))
+        // )
+      )
+      console.log(indexResponse)
+      fQuery = {}
+    } else {
+      fQuery = Map(
+        Paginate(fQuery, { size }),
+        Lambda('record', Get(Var('record')))
+      )
+    }
 
     // if (filters.$sort !== undefined) {
     //   values.sort(this.options.sorter(filters.$sort));
@@ -158,15 +194,7 @@ export class Service<T = any, D = Partial<T>> extends AdapterService<T, D> imple
     //   values = values.slice(0, filters.$limit);
     // }
 
-    const size = paginate.default || 100_000
-    const response = await this.Model.query(
-      Map(
-        Paginate(fQuery, { size }),
-        Lambda('record', Get(Var('record')))
-      )
-    )
-    const response2 = await this.Model.query(fQuery)
-    console.log(response2)
+    const response = await this.Model.query(fQuery)
 
     const data = response.data.map((r: any) => this.formatResult(r))
 
