@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+
+
+**Note:** Version bump only for package feathers
+
+
+
+
+
+# [5.0.0-pre.30](https://github.com/steffanhalv/feathers/compare/v5.0.0-pre.29...v5.0.0-pre.30) (2022-09-20)
+
+
+### Features
+
+* **app.unuse:** Allow to unregister services at runtime ([#2035](https://github.com/feathersjs/feathers/issues/2035)) ([d734931](https://github.com/steffanhalv/feathers/commit/d16601f2277dca5357866ffdefba2a611f6dc7fa))
+
+
+
+
+
 # [5.0.0-pre.29](https://github.com/feathersjs/feathers/compare/v5.0.0-pre.28...v5.0.0-pre.29) (2022-09-16)
 
 
