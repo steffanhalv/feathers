@@ -4,7 +4,7 @@
   "homepage": "http://feathersjs.com",
   "repository": {
     "type": "git",
-    "url": "git://github.com/feathersjs/feathers.git"
+    "url": "git://github.com/steffanhalv/feathers.git"
   },
   "author": {
     "name": "Feathers contributor",
@@ -17,7 +17,7 @@
     "url": "https://github.com/sponsors/daffl"
   },
   "bugs": {
-    "url": "https://github.com/feathersjs/feathers/issues"
+    "url": "https://github.com/steffanhalv/feathers/issues"
   },
   "engines": {
     "node": ">= 14"
