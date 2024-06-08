@@ -81,7 +81,7 @@ In `src/authentication.js`:
 
 ```js
 const axios = require('axios');
-const { OAuthStrategy } = require('@feathersjs/authentication-oauth');
+const { OAuthStrategy, oauth } = require('@feathersjs/authentication-oauth');
 
 class GoogleStrategy extends OAuthStrategy {
   async getEntityData(profile) {
@@ -106,7 +106,7 @@ module.exports = app => {
   authentication.register('google', new GoogleStrategy());
 
   app.use('/authentication', authentication);
-  app.configure(expressOauth());
+  app.configure(oauth());
 };
 ```
 **Important**: googleId, profilePicture and email are properties that should exist on the database model!
